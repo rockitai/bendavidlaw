@@ -284,3 +284,11 @@ input[type=checkbox]{width:auto}
   .nav-menu .sub-menu{display:none;flex-basis:100%}
   .nav-menu .sub-menu.mobile-expanded{display:block}
 }
+
+/* nav alignment: reset generic list spacing inside the navbar */
+.nav-menu,.sub-menu{margin:0;padding-inline-start:0}
+.nav-menu li,.sub-menu li{margin:0}
+.nav-menu{align-items:center}
+.nav-right-group,.nav-cta-container,.nav-brand{align-items:center}
+.nav-phone-link,.nav-phone-link *{line-height:1}
+.nav-menu>li>a{line-height:1.2}
