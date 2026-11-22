@@ -19,7 +19,10 @@ HEAD = '''<!DOCTYPE html>
 <meta name="robots" content="index, follow">
 <title>{title}</title>
 <meta name="description" content="{desc}">
+<meta name="keywords" content="{kw}">
 <link rel="canonical" href="https://bendavidlaw.co.il{path}">
+{extras}
+{gtm}
 <meta property="og:title" content="{title}"><meta property="og:description" content="{desc}"><meta property="og:type" content="website"><meta property="og:locale" content="he_IL">
 <link rel="icon" href="/assets/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +37,23 @@ TAIL = '''
 <script src="/script.js"></script>
 </body></html>
 '''
+
+from bs4 import BeautifulSoup
+def head_extras(name):
+    soup = BeautifulSoup(open(os.path.join(BD, 'pages', name + '.html'), encoding='utf8').read(), 'lxml')
+    out = []
+    for m in soup.head.find_all('meta'):
+        k = m.get('property') or m.get('name') or ''
+        if k.startswith(('og:', 'twitter:')) or k in ('google-site-verification', 'keywords'):
+            if k in ('og:title', 'og:description', 'og:type', 'og:locale', 'keywords'): continue
+            out.append(str(m))
+    for sc in soup.head.find_all('script', type='application/ld+json'):
+        out.append(str(sc))
+    return '\n'.join(out)
+
+GTM = """<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','wait_for_update':500});</script>
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-TN44STVH');</script>"""
 
 def route(name):
     if name == 'index': return ''
@@ -50,7 +70,7 @@ for f in sorted(glob.glob(os.path.join(BD, 'clean', '*.html'))):
     body = re.sub(r'\?v=\d+', '', body)
     m = meta[name]
     path = '/' + route(name)
-    page = HEAD.format(title=html.escape(m['title']), desc=html.escape(m['desc'], quote=True), path=urllib.parse.quote(path, safe='/')) \
+    page = HEAD.format(title=html.escape(m['title']), desc=html.escape(m['desc'], quote=True), path=urllib.parse.quote(path, safe='/'), kw='דיני משפחה, גירושים, עורך דין לענייני משפחה מומלץ, צוואה, משמורת', extras=head_extras(name), gtm=GTM) \
         + nav + '\n<main id="main">\n' + body + '\n</main>\n' + footer + TAIL
     page = re.sub(r'\?v=\d+', '', page)
     d = os.path.join(OUT, *route(name).split('/')) if name != 'index' else OUT
