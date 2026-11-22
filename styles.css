@@ -40,7 +40,7 @@ p{margin-bottom:1em}
 .nav-menu>li{position:relative}
 .nav-menu a{color:var(--primary);font-weight:500;padding:.55em .9em;border-radius:999px;display:block;transition:background .2s}
 .nav-menu>li>a:hover{background:var(--bg-light)}
-.nav-cta-item-mobile{display:none}
+.nav-cta-item-mobile{display:list-item}
 .sub-menu{position:absolute;top:100%;right:0;min-width:300px;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);list-style:none;padding:8px;opacity:0;visibility:hidden;transform:translateY(8px);transition:.25s}
 .nav-menu>li:hover .sub-menu,.nav-menu>li:focus-within .sub-menu{opacity:1;visibility:visible;transform:none}
 .sub-menu a{font-size:.93rem;padding:.55em .9em;border-radius:8px}.sub-menu a:hover{background:var(--bg-light)}
