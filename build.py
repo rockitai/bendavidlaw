@@ -11,7 +11,8 @@ nav = nav.replace('/assets/site-----image-1.webp', '/assets/site-----image-1.web
 footer = re.search(r'<footer class="site-footer".*?</footer>', home, re.S).group(0)
 footer = re.sub(r' style="[^"]*"', '', footer)
 footer = re.sub(r' data-[a-z-]+="[^"]*"', '', footer)
-footer = footer.replace('נוצר באמצעות Zappy', 'נוצר באמצעות Zappy')
+footer = re.sub(r'\s*<span class="legal-divider">\|</span>\s*<a[^>]*zappy-attribution[^>]*>.*?</a>', '', footer, flags=re.S)
+assert 'zappy' not in footer.lower(), 'zappy attribution still in footer'
 
 HEAD = '''<!DOCTYPE html>
 <html lang="he" dir="rtl"><head>
@@ -30,6 +31,7 @@ HEAD = '''<!DOCTYPE html>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 <link rel="stylesheet" href="/styles.css">
 </head><body>
+{gtm_ns}
 <a class="skip-link" href="#main">דלג לתוכן הראשי</a>
 '''
 TAIL = '''
@@ -46,14 +48,39 @@ def head_extras(name):
         k = m.get('property') or m.get('name') or ''
         if k.startswith(('og:', 'twitter:')) or k in ('google-site-verification', 'keywords'):
             if k in ('og:title', 'og:description', 'og:type', 'og:locale', 'keywords'): continue
-            out.append(str(m))
-    for sc in soup.head.find_all('script', type='application/ld+json'):
-        out.append(str(sc))
+            x = str(m)
+            for a, b in WORDING: x = x.replace(a, b)
+            out.append(x)
+    out.append('<script type="application/ld+json">' + json.dumps(LD, ensure_ascii=False) + '</script>')
     return '\n'.join(out)
+
+LD = {
+    "@context": "https://schema.org",
+    "@type": ["LegalService", "LocalBusiness"],
+    "@id": "https://bendavidlaw.co.il#organization",
+    "name": "אבי בן דוד, עו״ד",
+    "url": "https://bendavidlaw.co.il",
+    "description": "משרד עו״ד אבי בן דוד, חיפה – דיני משפחה (גירושין, מזונות, משמורת, הסכמי ממון, צוואות וייפוי כוח מתמשך), דינים אישיים, וייצוג פצועי ונכי צה״ל מול משרד הביטחון: ועדות רפואיות, ערעורים והכרה בנכות. ייצוג בכל הארץ. ייעוץ ראשוני ללא התחייבות.",
+    "areaServed": "IL",
+    "telephone": "+972-4-8669000",
+    "email": "avibd@bendavidlaw.co.il",
+    "address": {"@type": "PostalAddress", "streetAddress": "שדרות ההסתדרות 66", "addressLocality": "חיפה", "postalCode": "3296052", "addressCountry": "IL"},
+    "contactPoint": [{"@type": "ContactPoint", "contactType": "customer service", "email": "Avibd@bendavidlaw.co.il", "telephone": "054-4544546"}],
+    "sameAs": ["https://facebook.com/profile.php?id=61586762410240", "https://youtube.com/@AviBenDavid-g9c"],
+}
+GTM_NOSCRIPT = '<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TN44STVH" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>'
 
 GTM = """<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
 gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','wait_for_update':500});</script>
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-TN44STVH');</script>"""
+
+WORDING = [
+    ('עורך דין מומלץ לענייני משפחה', 'עורך דין לענייני משפחה'),
+    ('תחומי התמחות', 'תחומי עיסוק'),
+    ('תחומי ההתמחות', 'תחומי העיסוק'),
+    ('ועד להשגת התוצאה הטובה ביותרעבורכם', 'ועד להשגת מטרותיכם'),
+    ('מומלץ', 'כדאי'),
+]
 
 def route(name):
     if name == 'index': return ''
@@ -68,9 +95,13 @@ for f in sorted(glob.glob(os.path.join(BD, 'clean', '*.html'))):
     body = re.sub(r'\s*data-zappy-mobile-src="[^"]*"', '', body)
     body = body.replace('viewbox=', 'viewBox=').replace('preserveaspectratio=', 'preserveAspectRatio=')
     body = re.sub(r'\?v=\d+', '', body)
+    for a, b in WORDING: body = body.replace(a, b)
     m = meta[name]
+    m = {k: v for k, v in m.items()}
+    for k in ('title', 'desc'):
+        for a, b in WORDING: m[k] = m[k].replace(a, b)
     path = '/' + route(name)
-    page = HEAD.format(title=html.escape(m['title']), desc=html.escape(m['desc'], quote=True), path=urllib.parse.quote(path, safe='/'), kw='דיני משפחה, גירושים, עורך דין לענייני משפחה מומלץ, צוואה, משמורת', extras=head_extras(name), gtm=GTM) \
+    page = HEAD.format(title=html.escape(m['title']), desc=html.escape(m['desc'], quote=True), path=urllib.parse.quote(path, safe='/'), kw='דיני משפחה, גירושים, עורך דין לענייני משפחה, צוואה, משמורת', extras=head_extras(name), gtm=GTM, gtm_ns=GTM_NOSCRIPT) \
         + nav + '\n<main id="main">\n' + body + '\n</main>\n' + footer + TAIL
     page = re.sub(r'\?v=\d+', '', page)
     d = os.path.join(OUT, *route(name).split('/')) if name != 'index' else OUT

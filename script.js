@@ -11,10 +11,30 @@
   document.querySelectorAll('.share-facebook').forEach(function(a){a.href='https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href);});
   document.querySelectorAll('.share-linkedin').forEach(function(a){a.href='https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(location.href);});
   document.querySelectorAll('.share-twitter').forEach(function(a){a.href='https://twitter.com/intent/tweet?url='+encodeURIComponent(location.href);});
-  // Forms: TODO connect to a real backend/endpoint (Formspree, Netlify Forms, own API...). Currently redirects to /thank-you.
-  document.querySelectorAll('form').forEach(function(f){f.addEventListener('submit',function(e){e.preventDefault();
-    if(f.dataset.endpoint){fetch(f.dataset.endpoint,{method:'POST',body:new FormData(f)}).finally(function(){location.href='/thank-you';});}
-    else{location.href='/thank-you';}});});
+  // Forms: sent by our own serverless endpoint (/api/contact) straight to the office mailbox. No third-party form service.
+  document.querySelectorAll('form').forEach(function(f){
+    var hp=document.createElement('input');hp.type='text';hp.name='website';hp.tabIndex=-1;hp.autocomplete='off';hp.setAttribute('aria-hidden','true');
+    hp.style.cssText='position:absolute;left:-9999px;width:1px;height:1px;opacity:0';f.appendChild(hp);
+    var msg=document.createElement('div');msg.className='form-status';msg.setAttribute('role','status');msg.style.cssText='margin-top:12px;font-weight:600';f.appendChild(msg);
+    f.addEventListener('submit',function(e){
+      e.preventDefault();
+      var btn=f.querySelector('button[type=submit],input[type=submit],button:not([type])'),old=btn?btn.textContent:'';
+      if(btn){btn.disabled=true;btn.textContent='שולח...';}
+      msg.textContent='';
+      var data={};new FormData(f).forEach(function(v,k){data[k]=v;});
+      data.page=location.pathname;
+      fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+        .then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok||!j.ok)throw new Error(j.error||'send failed');});})
+        .then(function(){
+          if(typeof window.gtag==='function'){window.gtag('event','generate_lead',{form_page:location.pathname});}
+          (window.dataLayer=window.dataLayer||[]).push({event:'form_submit_success',form_page:location.pathname});
+          location.href='/thank-you';})
+        .catch(function(){
+          if(btn){btn.disabled=false;btn.textContent=old;}
+          msg.style.color='#b42318';
+          msg.textContent='אירעה שגיאה בשליחה. אפשר להתקשר 054-4544546 או לכתוב ל-Avibd@bendavidlaw.co.il';});
+    });
+  });
 })();
 
 /* ===== Cookie consent banner (same behaviour/text/storage key as the original site) ===== */

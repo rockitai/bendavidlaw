@@ -1,0 +1,7 @@
+{
+  "name": "bendavidlaw",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": { "nodemailer": "^6.9.16" },
+  "engines": { "node": ">=18" }
+}
