@@ -1,6 +1,8 @@
 // Vercel serverless function: sends the contact form straight to the office mailbox over SMTP.
 // Required environment variables (Vercel -> Project -> Settings -> Environment Variables):
 //   SMTP_HOST, SMTP_PORT (465 or 587), SMTP_USER, SMTP_PASS   and optionally MAIL_FROM
+// Brevo: SMTP_HOST=smtp-relay.brevo.com, SMTP_PORT=587, SMTP_USER=<Brevo SMTP login>, SMTP_PASS=<Brevo SMTP key>.
+// The Brevo SMTP login is not a sender address, so the sender defaults to the office address (must be a verified sender in Brevo).
 // The recipient is fixed here on the server and can never be set by the client.
 const nodemailer = require('nodemailer');
 
@@ -30,7 +32,7 @@ module.exports = async (req, res) => {
     const transporter = nodemailer.createTransport({ host: SMTP_HOST, port, secure: port === 465, auth: { user: SMTP_USER, pass: SMTP_PASS } });
     const rows = [['שם', name], ['טלפון', phone], ['אימייל', email || '—'], ['עמוד', page || '—'], ['הודעה', message || '—']];
     await transporter.sendMail({
-      from: MAIL_FROM || SMTP_USER,
+      from: MAIL_FROM || `"אתר בן דוד" <${TO}>`,
       to: TO,
       replyTo: email || undefined,
       subject: `פנייה חדשה מהאתר - ${name}`,
