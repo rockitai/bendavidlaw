@@ -14,7 +14,8 @@
   // Forms: sent by our own serverless endpoint (/api/contact) straight to the office mailbox. No third-party form service.
   document.querySelectorAll('form').forEach(function(f){
     var hp=document.createElement('input');hp.type='text';hp.name='website';hp.tabIndex=-1;hp.autocomplete='off';hp.setAttribute('aria-hidden','true');
-    hp.style.cssText='position:absolute;left:-9999px;width:1px;height:1px;opacity:0';f.appendChild(hp);
+    // Visually hidden without any offset: a left:-9999px offset widens RTL pages to ~10,000px on mobile.
+    hp.style.cssText='position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;opacity:0;pointer-events:none';f.appendChild(hp);
     var msg=document.createElement('div');msg.className='form-status';msg.setAttribute('role','status');msg.style.cssText='margin-top:12px;font-weight:600';f.appendChild(msg);
     f.addEventListener('submit',function(e){
       e.preventDefault();
